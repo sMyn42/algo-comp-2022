@@ -3,7 +3,7 @@ import json
 import sys
 import os
 
-INPUT_FILE = 'testdata.json' # Constant variables are usually in ALL CAPS
+INPUT_FILE = './testdata.json' # Constant variables are usually in ALL CAPS
 
 class User:
     def __init__(self, name, gender, preferences, grad_year, responses):
@@ -17,7 +17,18 @@ class User:
 # Takes in two user objects and outputs a float denoting compatibility
 def compute_score(user1, user2):
     # YOUR CODE HERE
-    return 0
+    user1_pref = (int)(user2.gender in user1.preferences)
+    user2_pref = (int)(user1.gender in user2.preferences)
+    compat_year = (36 - (user2.grad_year - user1.grad_year)**2)/36.0 #Compares Users
+    similarity = 0.0
+    for i, j in zip(user1.responses, user2.responses):
+        similarity += ((i - j)/max(max(i, j), 1)) ** 2
+
+
+    similarity /= len(user1.responses)
+    similarity = similarity * compat_year * user1_pref * user2_pref
+
+    return similarity
 
 
 if __name__ == '__main__':
