@@ -85,39 +85,39 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
 
     matches = []
 
-    free_proposers = {i: True for i in range(group_index)} #keeps track of free proposers
+    free_proposers = [i for i in range(group_index)] #keeps track of free proposers
     free_receivers = [i for i in range(group_index, scores.shape[0])] #keeps track of free receivers
     receiver_matches = {i: None for i in range(group_index, scores.shape[0])}
     to_propose = [list(proposer_preferences[i]) for i in range(proposer_preferences.shape[0])]
 
-    print(free_proposers)
 
     print("Proposal Order")
     print(np.array(to_propose))
 
-    while (sum(free_proposers.values()) >= 1):
-        for (k, v) in free_proposers.items():
-            if v:
-                p = k
+    while (sum(free_proposers) >= 1):
+        p = free_proposers[0]
         # pick the first unproposed r:
-        r = to_propose[k].pop(0)
+        r = to_propose[p].pop(0)
         print(p, "  proposing to  ", r)
-        print(np.array(to_propose))
+        # print(np.array(to_propose, dtype=object))
 
         # if statment
+        # if scores[r][p] == 0.0:
+        #     free_proposers[p] = False
+
         if r in free_receivers:
             receiver_matches[r] = p
-            free_proposers[p] = False
+            free_proposers.pop(0)
             free_receivers.pop(free_receivers.index(r))
 
-        # if this p is better
-        elif list(receiver_preferences[r - group_index]).index(p) > list(receiver_preferences[r - group_index]).index(receiver_matches[r]):
-            free_proposers[receiver_matches[r]] = True
-            receiver_matches[r] = p
+        # # if this p is better
+        # elif list(receiver_preferences[r - group_index]).index(p) > list(receiver_preferences[r - group_index]).index(receiver_matches[r]):
+        #     free_proposers.append(receiver_matches[r])
+        #     receiver_matches[r] = p
 
         # reject p if neither
-        else:
-            free_proposers[p] = False
+        # else:
+        #     free_proposers.pop(0)
 
     for (k, v) in receiver_matches.items():
         matches.append((int(v), int(k)))
