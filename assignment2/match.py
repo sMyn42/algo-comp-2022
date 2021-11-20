@@ -1,5 +1,5 @@
-import numpy as np
 from typing import List, Tuple
+import numpy as np
 
 def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List[Tuple]:
     """
@@ -8,7 +8,7 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
     :param gender_id: list of N gender identities (Male, Female, Non-binary) corresponding to each user
     :param gender_pref: list of N gender preferences (Men, Women, Bisexual) corresponding to each user
     :return: `matches`, a List of (Proposer, Acceptor) Tuples representing monogamous matches
-
+    
     Some Guiding Questions/Hints:
         - This is not the standard Men proposing & Women receiving scheme Gale-Shapley is introduced as
         - Instead, to account for various gender identity/preference combinations, it would be better to choose a random half of users to act as "Men" (proposers) and the other half as "Women" (receivers)
@@ -30,38 +30,41 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
     # Allow numpy functions to be used
     scores = np.array(scores)
 
-    print(scores)
+    # print(scores)
 
-    # Change the compatibility scores based on gender preferences.
-    for i in range(scores.shape[0]):
-        for j in range(scores.shape[1]):
-            if gender_pref[i] == "Men":
-                if "Male" != gender_id[j]:
-                    scores[i][j] = 0
-            elif gender_pref[i] == "Women":
-                if "Female" != gender_id[j]:
-                    scores[i][j] = 0
+    # Since the genders don't line up well, I'll be implementing friend matching
+
+    # # Change the compatibility scores based on gender preferences.
+    # for i in range(scores.shape[0]):
+    #     for j in range(scores.shape[1]):
+    #         if gender_pref[i] == "Men":
+    #             if "Male" != gender_id[j]:
+    #                 scores[i][j] = 0
+    #         elif gender_pref[i] == "Women":
+    #             if "Female" != gender_id[j]:
+    #                 scores[i][j] = 0
 
     #Partition Array
     group_index = scores.shape[0]//2
 
-    proposers = np.arange(0, group_index)
-    proposer_preferences = np.ndarray((group_index, group_index)) #The first half
+    proposers = np.arange(0, group_index, dtype=int)
+    proposer_preferences = np.ndarray((group_index, group_index), dtype=int) #The first half
     for j in range(0, group_index): 
-        proposer_preferences[j] = np.argsort(scores[j][group_index:]) + np.repeat(group_index, group_index)
+        proposer_preferences[j] = np.repeat(group_index, group_index) - np.argsort(scores[j][group_index:]) + np.repeat(group_index, group_index)
 
-    receivers = np.arange(group_index, scores.shape[0])
-    receiver_preferences = np.ndarray((group_index, group_index)) #The second half
+    receivers = np.arange(group_index, scores.shape[0], dtype=int)
+    receiver_preferences = np.ndarray((group_index, group_index), dtype=int) #The second half
     for i in range(group_index, scores.shape[0]):
-        receiver_preferences[i - group_index] = np.argsort(scores[i][:group_index])
+        receiver_preferences[i - group_index] = np.repeat(group_index, group_index) - np.argsort(scores[i][:group_index])
 
     print(scores)
 
-    print("Proposer Preferences")
+    print("\nProposer Preferences")
     print(proposer_preferences)
 
-    print("Receiver Preferences")
+    print("\nReceiver Preferences")
     print(receiver_preferences)
+    print("\n\n")
 
     # Carry out matching algorithm:
 
@@ -69,6 +72,16 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
     # ----------
 
     # Everyone starts free
+
+    matches = []
+
+    free_proposers = [1, 2, 3, 4, 5]
+    receivers = [6, 7, 8, 9, 10]
+    proposal_list = [list(proposer_preferences[i]) for i in range(proposer_preferences.shape[1])]
+    receiver_matches = {i: None for i in receivers}
+
+    print(proposal_list)
+    print("\n\n\n\n")
 
     # while proposer is free:
     
@@ -83,47 +96,39 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
     #          rejects p
     # END
 
-    matches = []
+    while (len(free_proposers) != 0):
 
-    free_proposers = [i for i in range(group_index)] #keeps track of free proposers
-    free_receivers = [i for i in range(group_index, scores.shape[0])] #keeps track of free receivers
-    receiver_matches = {i: None for i in range(group_index, scores.shape[0])}
-    to_propose = [list(proposer_preferences[i]) for i in range(proposer_preferences.shape[0])]
+        print(proposal_list)
 
+        p = free_proposers.pop(0)
+        r = proposal_list[p - 1].pop(0)
 
-    print("Proposal Order")
-    print(np.array(to_propose))
-
-    while (sum(free_proposers) >= 1):
-        p = free_proposers[0]
-        # pick the first unproposed r:
-        r = to_propose[p].pop(0)
+        
         print(p, "  proposing to  ", r)
-        # print(np.array(to_propose, dtype=object))
-
-        # if statment
-        # if scores[r][p] == 0.0:
-        #     free_proposers[p] = False
-
-        if r in free_receivers:
+        
+        
+        if receiver_matches.get(r) is None:
             receiver_matches[r] = p
-            free_proposers.pop(0)
-            free_receivers.pop(free_receivers.index(r))
+            print(r, " matched with ", p)
 
-        # # if this p is better
-        # elif list(receiver_preferences[r - group_index]).index(p) > list(receiver_preferences[r - group_index]).index(receiver_matches[r]):
-        #     free_proposers.append(receiver_matches[r])
-        #     receiver_matches[r] = p
+        # If index of current match is greater than that of the proposed match: (TODO)
+        elif np.where(receiver_preferences[r - group_index - 1] == receiver_matches.get(r)) > np.where(receiver_preferences[r - group_index - 1] == p):
+            free_proposers.insert(0, receiver_matches[r])
+            receiver_matches[r] = p
+            print(r, " was taken from ", free_proposers[0], " by ", p)
 
-        # reject p if neither
-        # else:
-        #     free_proposers.pop(0)
+        else:
+            free_proposers.insert(0, p)
 
-    for (k, v) in receiver_matches.items():
-        matches.append((int(v), int(k)))
+        print(free_proposers)
+        print()
 
+    # Update + Show Answers
 
-    print("-------------------------\n\n\nMATCHES:")
+    for (r, p) in receiver_matches.items():
+        matches.append((p, r))
+
+    print("-------------------------\n\n\nMATCHES:\n\n")
     print(matches)
     print("\n\n\n--------------------------")
 
@@ -144,5 +149,3 @@ if __name__ == "__main__":
             gender_preferences.append(curr)
 
     gs_matches = run_matching(raw_scores, genders, gender_preferences)
-
-    
